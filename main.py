@@ -5,10 +5,12 @@ import mysql.connector
 from datetime import datetime
 
 app = Flask(__name__)
+flask_port=os.environ.get('FLASK_RUN_PORT')
 db_host=os.environ.get('DB_HOST')
 db_user=os.environ.get('DB_USER')
 db_password=os.environ.get('DB_PASSWORD')
 db_database=os.environ.get('DB_NAME')
+db_table_name = os.environ.get('DB_TABLE_NAME')
 
 # Подключение к базе данных MySQL
 db = mysql.connector.connect(
@@ -19,9 +21,10 @@ database=db_database,
 autocommit=True )
 cursor = db.cursor()
 
+#requests
 # SQL-запрос для создания таблицы в БД
 create_table_query = f"""
-CREATE TABLE IF NOT EXISTS {db_database}.requests (
+CREATE TABLE IF NOT EXISTS {db_database}.{db_table_name} (
 id INT AUTO_INCREMENT PRIMARY KEY,
 request_date DATETIME,
 request_ip VARCHAR(255)
@@ -37,7 +40,7 @@ def index():
     # Запись в базу данных
     now = datetime.now()
     current_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    query = "INSERT INTO requests (request_date, request_ip) VALUES (%s, %s)"
+    query = f"INSERT INTO {db_table_name} (request_date, request_ip) VALUES (%s, %s)"
     values = (current_time, ip_address)
     cursor.execute(query, values)
     db.commit()
@@ -46,4 +49,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', port=flask_port )
