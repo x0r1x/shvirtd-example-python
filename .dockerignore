@@ -1,0 +1,5 @@
+**/*.pdf
+**/.nev
+**/Dockerfile*
+LICENSE
+README.md

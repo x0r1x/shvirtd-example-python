@@ -1,0 +1,67 @@
+version: "3"
+# The parser will ignore extension fields prefixed with x-
+x-deploy: &deploy-dev
+  deploy:
+    resources:
+      limits:
+        cpus: "1"
+        memory: 512M
+      reservations:
+        memory: 256M
+x-env_file: &env_file
+  env_file:
+    - .env
+x-restart: &restart
+  restart: always #no, on-failure , always(default), unless-stopped 
+
+include:
+  - ./proxy.yaml
+
+services:
+  db:
+    #image: mariadb:10.6.4-focal
+    image: mysql:8
+    volumes:
+      - db_data:/var/lib/mysql
+    <<: [*deploy-dev, *env_file, *restart]
+    command: "--mysql-native-password=ON" 
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_HOST="%" # it's very important!!!
+    healthcheck:
+      test: mysqladmin ping -u $$MYSQL_USER --password=$$MYSQL_PASSWORD
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      backend:
+        ipv4_address: 172.20.0.10
+
+  web:
+    #image: cr.yandex/crpr851ktv8huaqmc41c/back_service:latest
+    build:
+      context: .
+    S  dockerfile: ./Dockerfile.python
+    depends_on: 
+      - db
+    <<: [*env_file, *restart]
+    environment:
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_HOST=db
+      - DB_TABLE_NAME=${WEB_DB_TABLE_NAME}
+    networks:
+      backend:
+        ipv4_address: 172.20.0.5
+
+volumes:
+  db_data: {}
+
+networks:
+  local-dns:
+    external: true
