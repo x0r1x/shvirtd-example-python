@@ -45,7 +45,7 @@ services:
     #image: cr.yandex/crpr851ktv8huaqmc41c/back_service:latest
     build:
       context: .
-    S  dockerfile: ./Dockerfile.python
+      dockerfile: ./Dockerfile.python
     depends_on: 
       - db
     <<: [*env_file, *restart]
